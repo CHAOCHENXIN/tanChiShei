@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>贪吃蛇</title>
+    <style>
+        #a{
+            position: absolute;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+    <script>
+        //地图
+        (function () {
+            //地图属性
+            function Map(width,height,color) {
+                this.width = width
+                this.height = height
+                this.color = color
+            }
+            //地图方法
+            Map.prototype.init1 = function () {
+                var div1 = document.createElement('div')
+                div1.style.width = this.width + 'px'
+                div1.style.height = this.height + 'px'
+                div1.style.backgroundColor = this.color
+                div1.style.position = 'relative'
+                div1.style.overflow = 'hidden'
+                div1.id = 'MapDiv'
+                document.body.appendChild(div1)
+            }
+            window.Map = Map
+        })();
+
+        //食物
+        (function () {
+            var num2 = null
+            //食物属性
+            function Foot(width,height,color) {
+                this.width = width
+                this.height = height
+                this.color = color
+            }
+
+            //食物方法
+            Foot.prototype.init2 = function () {
+                var MapDiv = document.getElementById("MapDiv")
+                if (num2){
+                    MapDiv.removeChild(num2)
+                }
+                var MapDiv = document.querySelector('#MapDiv')
+                var div2 = document.createElement('div')
+                div2.style.width = this.width + 'px'
+                div2.style.height = this.height + 'px'
+                div2.style.backgroundColor = this.color
+                div2.style.position = 'absolute'
+                this.x = Math.floor(Math.random()*(MapDiv.offsetWidth/this.width))
+                this.y = Math.floor(Math.random()*(MapDiv.offsetHeight/this.height))
+                div2.style.left = this.x * this.width + 'px'
+                div2.style.top = this.y * this.height + 'px'
+                MapDiv.appendChild(div2)
+                num2 = div2
+            }
+            window.Foot = Foot
+        })();
+
+        //蛇
+        (function () {
+            //记录蛇
+            var num = []
+            //蛇属性
+            function Snake(width,height,direction) {
+                this.width = width
+                this.height = height
+                this.direction = direction
+                this.toBody = [
+                    {
+                        x : 4,
+                        y : 2,
+                        color : 'red'
+                    },
+                    {
+                        x : 3,
+                        y : 2,
+                        color : 'green'
+                    },
+                    {
+                        x : 2,
+                        y : 2,
+                        color : 'yellow'
+                    },
+                ]
+            }
+
+            //蛇方法
+            Snake.prototype.init3 = function () {
+                move()
+                //创建蛇
+                for (var i = 0; i < this.toBody.length; i++) {
+                    var MapDiv = document.querySelector('#MapDiv')
+                    var div3 = document.createElement('div')
+                    div3.style.width = this.width + 'px'
+                    div3.style.height = this.height + 'px'
+                    div3.style.backgroundColor = this.toBody[i].color
+                    div3.style.position = 'absolute'
+                    div3.style.left = this.toBody[i].x * this.width + 'px'
+                    div3.style.top = this.toBody[i].y * this.height + 'px'
+                    MapDiv.append(div3)
+                    num.push(div3)
+                }
+
+            }
+
+            Snake.prototype.onmove = function(){
+                for (var i = this.toBody.length - 1; i > 0; i--){
+                    //蛇移动 ==> index值越小蛇身越靠前 把前面的数值赋给后面的
+                    this.toBody[i].x = this.toBody[i - 1].x
+                    this.toBody[i].y = this.toBody[i - 1].y
+                }
+                // 蛇头移动
+                switch (this.direction) {
+                    case 'left' : this.toBody[0].x--; break;
+                    case 'right' : this.toBody[0].x++; break;
+                    case 'top' : this.toBody[0].y--; break;
+                    case 'buttom' : this.toBody[0].y++; break;
+                }
+
+                var that = this
+                //键盘控制蛇头移动
+                window.onkeydown = function () {
+                    switch (event.keyCode) {
+                        case 37 :if (that.direction != "right"){
+                            that.direction = 'left'
+                        } ; break;
+                        case 38 :if (that.direction != "buttom"){
+                            that.direction = 'top'
+                        } ; break;
+                        case 39 :if (that.direction != "left"){
+                            that.direction = 'right'
+                        } ; break;
+                        case 40 :if (that.direction != "top"){
+                            that.direction = 'buttom'
+                        } ; break;
+                    }
+                }
+            }
+
+            //删除旧蛇节
+            function move () {
+                var MapDiv = document.getElementById('MapDiv')
+                for (var i = 0; i < num.length; i++){
+                    MapDiv.removeChild(num[i])
+                }
+                num = []
+            }
+
+
+
+            window.Snake = Snake
+        })();
+
+        //游戏
+        (function () {
+            var set = null
+            //游戏属性
+            function Game () {
+                this.map = new Map(800,600,'#F6D1F1')
+                this.foot = new Foot(20,20,'yellowgreen')
+                this.snake = new Snake(20,20,'buttom')
+            }
+
+            //游戏初始化
+            Game.prototype.init = function () {
+                this.map.init1()
+                this.foot.init2()
+                this.snake.init3()
+
+                that = this
+                set = setInterval(function(){
+                    //创造新蛇；删除老蛇
+                    that.snake.init3()
+                    that.snake.onmove()
+
+                    //碰墙就死
+                    if (that.snake.toBody[0].x == that.map.width/that.snake.width || that.snake.toBody[0].x < 0 || that.snake.toBody[0].y == that.map.height/that.snake.height || that.snake.toBody[0].y < 0){
+                        gameOver()
+                    }
+
+                    //蛇头碰到蛇身死
+                    if (that.snake.toBody.length > 5){
+                        for (var i = 4; i < that.snake.toBody.length; i ++){
+                            if (that.snake.toBody[i].x == that.snake.toBody[0].x && that.snake.toBody[i].y == that.snake.toBody[0].y){
+                                gameOver()
+                            }
+                        }
+                    }
+
+                    //蛇吃食物
+                    if (that.snake.toBody[0].x == that.foot.x && that.snake.toBody[0].y == that.foot.y) {
+
+                        //调用食物方法，生成新食物和删除旧食物在食物的方法中执行
+                        that.foot.init2()
+                        //蛇变长
+                        var newColor = ['#fad','#a32','#aF5','#caf','#a93']
+                        var newTOBody = {
+                            x : 10000,
+                            y : 10000,
+                            color : newColor[Math.floor(Math.random()*newColor.length)],
+                        }
+                        that.snake.toBody.push(newTOBody)
+                    }
+
+                },100)
+
+                //游戏失败函数
+                function gameOver() {
+                    clearInterval(set)
+                    var div4 = document.createElement('div')
+                    div4.style.width = 300 + 'px'
+                    div4.style.height = 200 + 'px'
+                    div4.style.backgroundColor = 'rgb(16,26,221,.5)'
+                    div4.style.position = 'absolute'
+                    div4.style.top = 50 + '%'
+                    div4.style.left = 50 + '%'
+                    div4.style.lineHeight = div4.style.height
+                    div4.style.textAlign = 'center'
+                    div4.style.marginTop = -100 + 'px'
+                    div4.style.marginLeft = -150 + 'px'
+                    var btn = document.createElement('button')
+                    btn.innerHTML = '重玩'
+                    document.body.appendChild(div4)
+                    div4.appendChild(btn)
+                    btn.onclick = function () {
+                        location.reload()  //刷新页面
+                    }
+                }
+
+
+            }
+
+            window.Game = Game
+        })()
+
+        var game = new Game()
+        game.init()
+    </script>
+</body>
+</html>
